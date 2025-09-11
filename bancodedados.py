@@ -1,68 +1,93 @@
 import sqlite3
-import os
 import time
+import os
 
-os.system('cls' or 'clear')
+conexao = sqlite3.connect("banco.db")
+cursor = conexao.cursor()
 
-conexao = sqlite3.connect('banco.db')
-comando = conexao.cursor()
+def criar_banco():
+    os.system("cls")
+    cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL UNIQUE,
+                    senha TEXT NOT NULL)''')
+    conexao.commit()
 
-comando.execute("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY, nome TEXT UNIQUE NOT NULL, senha INTEGER NOT NULL)")
-conexao.commit()
+def tela_inicial():
+    global verificador_de_escolha
+    print("Olá bem vindo!")
+    time.sleep(1)
 
-while True:
-    try:
-        print("Deseja fazer o que? \n 1. Fazer Login \n 2. Criar Conta")
-        escolha = int(input(""))
-        break
-    except ValueError:
-        print("Por favor escolha um dos numeros")
+    print(f"O que deseja fazer? \n 1) Fazer Login \n 2) Criar Conta")
+    escolha = input("Digite apenas numeros: ")
 
-if escolha == 1:
-    login = True
-    criar_conta = False
-if escolha == 2:
-    criar_conta = True
-    login = False
-
-while criar_conta == True:
-    try:
-        print("Crie uma conta")
-        nome = input("Qual seu nome? ")
-        time.sleep(0.5)
-        senha = int(input("Qual sua senha? "))
-        
-        comando.execute("INSERT INTO usuarios (nome, senha) VALUES (?, ?)", (nome, senha))
-        conexao.commit()
-        print("Usuário inserido com sucesso!")
-        print("Lista Finalizada")
-        time.sleep(1)
-        break  
-    except ValueError:
-        print("Erro na escrita! Por favor, insira um número para a senha e tente novamente.")
-        time.sleep(1)
-    except sqlite3.IntegrityError:
-        print("Este nome de usuário já está em uso. Tente outro.")
-    finally:
-        comando.execute("SELECT nome, senha FROM usuarios")
-    usuarios = comando.fetchall()
-
-    for usuario in usuarios:
-        nome_usuario, senha_usuario = usuario
-        print(f"Nome: {nome_usuario}, Senha: {senha_usuario}")
-
-while login == True:
-    print("Login")
+    while True:
+        if escolha == "1":
+            verificador_de_escolha = 1
+            break
+        elif escolha == "2":
+            verificador_de_escolha = 2
+            break
+        else:
+            print("O numero escolhido não está disponivel.")
+            time.sleep(0.5)
     
-    log_nome = input("Digite sua nome: ")
-    log_senha= int(input("Digite sua senha: "))
+    
+def fazer_login():
+    os.system("cls")
+    time.sleep(0.5)
+    print("Você escolheu: Fazer login")
+    
+    usuario_não_encontrado = 0
 
-    comando.execute("SELECT nome FROM usuarios WHERE nome = ? AND senha = ?", (log_nome, log_senha))
-    usuario_encontrado = comando.fetchone()
+    while True:
+        if usuario_não_encontrado == 6:
+            print("Limite de tentativas de login excedido!")
+            break
+        
+        login_usuario = input("Usuario: ")
+        login_senha = input("Senha: ")
+        time.sleep(1)
+    
+        cursor.execute("SELECT * FROM usuarios WHERE nome = ? AND senha = ? ", (login_usuario, login_senha))
+        usuario_existe = cursor.fetchone()
+    
+        if usuario_existe:
+            print(f"Login feito com sucesso, bem vindo {usuario_existe[0]}!")
+            break
+        else:
+            print("Usuario ou senha incorretos.")
+            time.sleep(0.5)
+            
+            os.system('cls')
+            usuario_não_encontrado += 1
 
-    if usuario_encontrado:
-        print(f"Login bem-sucedido! Bem-vindo, {usuario_encontrado[0]}.")
-        break
-    else:
-        print("Nome de usuário ou senha inválidos.")
-conexao.close()
+    conexao.close()
+
+def criar_conta():
+    os.system("cls")
+    time.sleep(0.5)
+    print("Você escolheu: Criar Conta")
+
+    criar_usuario = input("Crie seu usuario: ")
+    criar_senha = input("Crie sua senha: ")
+    time.sleep(1)
+    
+    try:
+        cursor.execute("INSERT INTO usuarios (nome, senha) VALUES (?, ?)", (criar_usuario, criar_senha))
+        time.sleep(1)
+        print("Conta criada com sucesso!")
+        
+        conexao.commit()
+    except sqlite3.IntegrityError:
+        print("Já existe um usuario com esse nome.")
+    finally:
+        conexao.close()
+
+criar_banco()
+tela_inicial()
+
+if verificador_de_escolha == 1:
+    fazer_login()
+if verificador_de_escolha == 2:
+    criar_conta()
